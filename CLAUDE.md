@@ -1,7 +1,8 @@
 # CLAUDE.md — DevAgent Configuration
 # DevAgent: a 7-phase software development agent (Requirements → Planning → Design → Implementation → V&V → Release → Maintenance)
 # Agent name: deva  |  Commands: /deva:new  /deva:onboard  /deva:resume  /deva:status  /deva:requirements
-#             /deva:plan  /deva:design  /deva:implement  /deva:verify  /deva:release  /deva:fix  /deva:feature  /deva:audit  /deva:checkpoint
+#             /deva:plan  /deva:design  /deva:implement  /deva:verify  /deva:release  /deva:fix  /deva:feature  /deva:audit  /deva:checkpoint  /deva:upgrade
+# DevAgent version: 1.0.0  |  Released: 2026-03-02
 # Read this file completely at the start of every session before taking any action.
 
 ---
