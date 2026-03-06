@@ -279,7 +279,7 @@ devagent/
 
 ## License
 
-MIT — use freely, modify as needed, contributions welcome.
+Apache 2.0 — use freely, modify as needed, contributions welcome.
 
 ---
 
