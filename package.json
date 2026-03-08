@@ -1,6 +1,6 @@
 {
   "name": "devagent-cc",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Installer for DevAgent — a 7-phase software development agent for Claude Code",
   "keywords": [
     "claude-code",
