@@ -2,11 +2,13 @@
 
 A structured, 7-phase software development agent for Claude Code. DevAgent brings engineering discipline to AI-assisted development — requirements traceability, phase gates, checkpoints, and a consistent workflow from idea to release.
 
+> Built for Claude Code. Designed for engineers who want AI assistance with engineering discipline.
+
 ---
 
 ## What is DevAgent?
 
-DevAgent is a configuration system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that turns it into a disciplined software development agent. Instead of ad-hoc AI coding sessions, DevAgent gives you a repeatable process:
+DevAgent is a configuration system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that turns it into a disciplined software development agent. Instead of ad-hoc AI coding sessions, DevAgent gives you a repeatable, traceable process:
 
 ```
 Requirements → Planning → Design → Implementation → V&V → Release → Maintenance
@@ -21,65 +23,89 @@ Every phase has defined inputs, outputs, and gate conditions. Nothing moves forw
 - **7-phase pipeline** — structured workflow with gate conditions at every phase boundary
 - **15 slash commands** — trigger any phase or action directly from Claude Code chat
 - **Project onboarding** — bring an existing codebase under agent control with full reverse-engineering
-- **Two profiles** — web (React, Next.js, Cloudflare deployment) and macOS (SwiftUI, code signing, notarization)
-- **Context-aware checkpoints** — automatic saves at phase gates and context thresholds; resume cleanly across sessions
-- **Change request flow** — new features go through PRD and Plan updates before any code is touched
+- **Two profiles** — web (React, Next.js, Cloudflare) and macOS (SwiftUI, code signing, notarization)
+- **Context-aware checkpoints** — automatic saves at phase gates; resume cleanly across sessions
+- **Change request flow** — new features update PRD and Plan before any code is touched
 - **Self-upgrading** — `/deva:upgrade` checks this repo for updates and applies them with your confirmation
-- **No src/ assumption** — project detector identifies source locations for any language or framework
+- **No `src/` assumption** — project detector identifies source locations for any language or framework
 
 ---
 
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — latest version
-- For web projects: Node.js, Cloudflare account (optional)
+- Node.js 18+ — required for the installer
+- For web projects: Cloudflare account (optional)
 - For macOS projects: Xcode, Apple Developer account, [XcodeBuildMCP](https://github.com/cameroncooke/XcodeBuildMCP)
 
 ---
 
 ## Installation
 
-### New project (no existing code)
+DevAgent installs in one command. It copies all skills, commands, and config files to the right locations automatically.
 
 ```bash
-# 1. Clone DevAgent
 npx devagent-cc@latest
+```
 
-# 2. Copy into your project
-cp DevAgent/CLAUDE.md your-project/
-cp -r DevAgent/.claude your-project/
+The installer will ask:
 
-# 3. Open your project in Claude Code
-cd your-project
-claude
+```
+Where would you like to install DevAgent?
 
-# 4. Start
+  1) Global — available in ALL projects  (~/.claude/)  [recommended]
+  2) Local  — this project only          (./.claude/)
+```
+
+**Choose Global** if you want `/deva:` commands available in every project without reinstalling.
+**Choose Local** if you want DevAgent scoped to a single project only.
+
+### Non-interactive install
+
+```bash
+npx devagent-cc@latest --global   # install globally, no prompts
+npx devagent-cc@latest --local    # install locally, no prompts
+```
+
+### Alternative — shell installer (no Node.js required)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/IAZ-A3/DevAgent/develop/install.sh | bash
+```
+
+### Updating
+
+```bash
+npx devagent-cc@latest
+```
+
+Same command — the installer detects your current version and offers to update.
+
+### Uninstalling
+
+```bash
+npx devagent-cc@latest --global --uninstall
+```
+
+---
+
+## Getting Started
+
+Once installed, open any project in Claude Code and type:
+
+**New project — starting from scratch:**
+```
 /deva:new
 ```
 
-### Existing project (code already written)
-
-```bash
-# 1. Clone DevAgent
-npx devagent-cc@latest
-
-# 2. Copy into your project
-cp DevAgent/CLAUDE.md your-project/
-cp -r DevAgent/.claude your-project/
-
-# 3. Open your project in Claude Code
-cd your-project
-claude
-
-# 4. Onboard
+**Existing project — code already written, no paper trail:**
+```
 /deva:onboard
 ```
 
-### Global commands (available in all projects)
-
-```bash
-# Copy commands to Claude Code global config
-cp DevAgent/.claude/commands/deva:* ~/.claude/commands/
+**Not sure where you are?**
+```
+/deva:status
 ```
 
 ---
@@ -91,7 +117,7 @@ cp DevAgent/.claude/commands/deva:* ~/.claude/commands/
 | `/deva:new` | Start a new project from scratch |
 | `/deva:onboard` | Onboard an existing project with no paper trail |
 | `/deva:resume` | Resume an interrupted session from checkpoint |
-| `/deva:status` | Project status report — current phase, plan progress, open bugs |
+| `/deva:status` | Project status — current phase, plan progress, open bugs |
 | `/deva:requirements` | Run or update the Requirements phase |
 | `/deva:plan` | Run or update the Planning phase |
 | `/deva:design` | Run or update the Design phase |
@@ -104,7 +130,7 @@ cp DevAgent/.claude/commands/deva:* ~/.claude/commands/
 | `/deva:checkpoint` | Save a manual checkpoint before ending your session |
 | `/deva:upgrade` | Check for and apply DevAgent updates from this repo |
 
-Commands accept optional arguments. Examples:
+Commands accept optional arguments:
 ```
 /deva:implement TASK-005
 /deva:fix login crashes on empty password
@@ -114,74 +140,9 @@ Commands accept optional arguments. Examples:
 
 ---
 
-## Project Structure
-
-After running `/deva:new` or `/deva:onboard`, your project will have this structure:
-
-```
-your-project/
-├── CLAUDE.md                          ← DevAgent master config (do not edit)
-├── PROJECT.md                         ← Your project identity and conventions
-├── VERSION
-├── CHANGELOG.md
-├── docs/
-│   ├── PRD.md                         ← Requirements (source of truth)
-│   ├── Plan.md                        ← Task plan with DONE/TODO status
-│   ├── VV-Report.md                   ← Verification report
-│   ├── MAINTENANCE-LOG.md
-│   └── design/
-│       ├── DesignIndex.md
-│       ├── SystemArchitecture.md
-│       ├── TechnologyStack.md
-│       └── ...
-└── .claude/
-    ├── registry.md                    ← Skill and MCP registry
-    ├── commands/                      ← All /deva: commands
-    ├── skills/                        ← Phase skills and profiles
-    │   ├── _shared/                   ← Shared utilities
-    │   ├── requirements/
-    │   ├── planning/
-    │   ├── design/
-    │   ├── implementation/
-    │   ├── verification/
-    │   ├── release/
-    │   ├── maintenance/
-    │   ├── onboarding/
-    │   ├── web-profile/               ← Web project extensions
-    │   └── macos-profile/             ← macOS project extensions
-    └── state/                         ← Runtime: checkpoints, artifact registry
-```
-
----
-
-## Profiles
-
-DevAgent auto-detects your project type and loads the appropriate profile.
-
-### Web Profile
-Activates when PROJECT.md or prompt contains: `web`, `webapp`, `React`, `Vue`, `Next`, `frontend`, `fullstack`
-
-Adds:
-- Web-specific NFRs (Core Web Vitals, accessibility, SEO)
-- Cloudflare Pages/Workers deployment pipeline
-- Web-specific V&V (Lighthouse, cross-browser checks)
-- Frontend design conventions
-
-### macOS Profile
-Activates when PROJECT.md or prompt contains: `macos`, `mac app`, `swift`, `swiftui`, `menubar`
-
-Adds:
-- SwiftUI component builder with MVVM conventions
-- Entitlements and privacy manifest configurator
-- 10-step release pipeline: archive → sign → notarize → staple → DMG
-- XcodeBuildMCP integration
-- macOS-specific NFRs (memory, launch time, VoiceOver, dark mode)
-
----
-
 ## How Phase Gates Work
 
-Every phase ends with a gate. DevAgent stops and presents the gate result before proceeding:
+Every phase ends with a gate. DevAgent stops and presents the result — you decide whether to continue:
 
 ```
 Phase gate: Requirements → Planning
@@ -196,39 +157,77 @@ Checkpoint saved: .claude/skills/state/requirements/checkpoint.md
 Approve to continue to Planning, or end session here.
 ```
 
-Gates can be `PASS`, `PASS_WITH_BUGS`, or `FAIL`. DevAgent never auto-chains phases — you approve each transition explicitly.
+Gates can be `PASS`, `PASS_WITH_BUGS`, or `FAIL`. DevAgent never auto-chains phases.
+
+---
+
+## Profiles
+
+DevAgent auto-detects your project type from `PROJECT.md` and loads the appropriate profile.
+
+### Web Profile
+**Activates on:** `web`, `webapp`, `React`, `Vue`, `Next`, `frontend`, `fullstack`
+
+Adds web-specific NFRs (Core Web Vitals, accessibility, SEO), Cloudflare Pages/Workers deployment pipeline, and web-specific V&V checks.
+
+### macOS Profile
+**Activates on:** `macos`, `mac app`, `swift`, `swiftui`, `menubar`
+
+Adds SwiftUI component builder with MVVM conventions, entitlements and privacy manifest configurator, and a 10-step release pipeline: archive → sign → notarize → staple → DMG.
 
 ---
 
 ## Onboarding an Existing Project
 
-`/deva:onboard` handles projects that were started without DevAgent:
+`/deva:onboard` handles projects started without DevAgent:
 
-1. **Project detection** — identifies language, framework, and source locations without assuming `src/`
-2. **Artifact scan** — reads README, docs, git log, and branch history
-3. **Code analysis** — reverse-engineers features from source with HIGH/MEDIUM/LOW confidence scoring
+1. **Project detection** — identifies language, framework, source locations (no `src/` assumption)
+2. **Artifact scan** — reads README, docs, git log, branch history
+3. **Code analysis** — reverse-engineers features with HIGH/MEDIUM/LOW confidence scoring
 4. **Gap interview** — asks what's missing, what's planned, what debt exists
-5. **PRD reconstruction** — produces a full PRD with AS-BUILT / PARTIAL / PLANNED status per feature
-6. **Paper trail** — reconstructs Plan.md (DONE/TODO split) and design docs
-7. **Re-entry decision** — you choose which phase to resume: Design, Implementation, V&V, or Maintenance
+5. **PRD reconstruction** — full PRD with `AS-BUILT` / `PARTIAL` / `PLANNED` status per feature
+6. **Paper trail** — reconstructs `Plan.md` (DONE/TODO split) and design docs
+7. **Re-entry decision** — you choose which phase to resume
 
 ---
 
-## Upgrading DevAgent
+## Project Structure
+
+After running `/deva:new` or `/deva:onboard`, your project will look like:
 
 ```
-/deva:upgrade
+your-project/
+├── CLAUDE.md                          ← DevAgent master config
+├── PROJECT.md                         ← Your project identity and conventions
+├── VERSION
+├── CHANGELOG.md
+├── docs/
+│   ├── PRD.md                         ← Requirements (source of truth)
+│   ├── Plan.md                        ← Task plan with DONE/TODO status
+│   ├── VV-Report.md                   ← Verification report
+│   ├── MAINTENANCE-LOG.md
+│   └── design/
+│       ├── DesignIndex.md
+│       ├── SystemArchitecture.md
+│       ├── TechnologyStack.md
+│       └── ...
+└── .claude/
+    ├── commands/                      ← All /deva: commands
+    └── skills/
+        ├── deva/                      ← DevAgent skills
+        │   ├── _shared/
+        │   ├── requirements/
+        │   ├── planning/
+        │   ├── design/
+        │   ├── implementation/
+        │   ├── verification/
+        │   ├── release/
+        │   ├── maintenance/
+        │   ├── onboarding/
+        │   ├── web-profile/
+        │   └── macos-profile/
+        └── state/                     ← Runtime: checkpoints, artifact registry
 ```
-
-The command:
-1. Reads your local DevAgent version from CLAUDE.md
-2. Fetches the latest version from this repo
-3. Shows what changed (from CHANGELOG.md)
-4. Lists which files differ
-5. Asks you to confirm before updating anything
-6. Creates `.backup` files before overwriting
-
-Your project files (`docs/`, `PROJECT.md`, `.claude/skills/state/`) are never touched.
 
 ---
 
@@ -242,44 +241,13 @@ DevAgent uses semantic versioning: `MAJOR.MINOR.PATCH`
 | MINOR | New skills, commands, or profiles — fully backward compatible |
 | PATCH | Bug fixes and clarifications — safe to apply without review |
 
-Current version: **1.0.0**
-
----
-
-## Repository Structure
-
-```
-devagent/
-├── README.md
-├── CHANGELOG.md
-├── CLAUDE.md                          ← Copy to project root
-├── PROJECT.md                         ← Base template
-├── PROJECT-web-template.md
-├── PROJECT-macos-template.md
-└── .claude/
-    ├── registry.md
-    ├── commands/                      ← All 15 /deva: command files
-    └── skills/
-        ├── _shared/                   ← context-manager, artifact-schema,
-        │                                 subagent-patterns, project-detector,
-        │                                 upgrade-manifest
-        ├── requirements/
-        ├── planning/
-        ├── design/
-        ├── implementation/
-        ├── verification/
-        ├── release/
-        ├── maintenance/
-        ├── onboarding/
-        ├── web-profile/
-        └── macos-profile/
-```
+Current version: **1.1.0**
 
 ---
 
 ## License
 
-Apache 2.0 — use freely, modify as needed, contributions welcome.
+[Apache 2.0](./LICENSE) — use freely, modify as needed, contributions welcome.
 
 ---
 
@@ -288,8 +256,4 @@ Apache 2.0 — use freely, modify as needed, contributions welcome.
 Issues and pull requests are welcome. When proposing changes to skill files, please include:
 - Which phase or command is affected
 - What problem the change solves
-- Whether it's a MAJOR / MINOR / PATCH change
-
----
-
-*Built for Claude Code. Designed for engineers who want AI assistance with engineering discipline.*
+- Whether it is a MAJOR / MINOR / PATCH change
