@@ -43,7 +43,7 @@ Every phase has defined inputs, outputs, and gate conditions. Nothing moves forw
 
 ```bash
 # 1. Clone DevAgent
-git clone https://github.com/IAZ-A3/DevAgent.git
+npx devagent-cc@latest
 
 # 2. Copy into your project
 cp DevAgent/CLAUDE.md your-project/
@@ -61,7 +61,7 @@ claude
 
 ```bash
 # 1. Clone DevAgent
-git clone https://github.com/IAZ-A3/DevAgent.git
+npx devagent-cc@latest
 
 # 2. Copy into your project
 cp DevAgent/CLAUDE.md your-project/

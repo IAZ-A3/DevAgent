@@ -6,6 +6,17 @@ Categories: Added | Changed | Fixed | Removed
 
 ---
 
+## [1.1.0] — 2026-03-08
+
+### Added
+- npx installer: `npx devagent-cc@latest` for zero-copy global or local install
+- Shell installer: `curl -fsSL .../install.sh | bash` for no-Node.js environments  
+- Interactive install prompt: global (~/.claude/) vs local (./.claude/)
+- Auto-detects existing install and prompts to update
+- Uninstall support: `npx devagent-cc --global --uninstall`
+
+---
+
 ## [1.0.1] — 2026-03-08
 
 ### Fixed

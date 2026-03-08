@@ -1,0 +1,40 @@
+{
+  "name": "devagent-cc",
+  "version": "1.0.1",
+  "description": "Installer for DevAgent — a 7-phase software development agent for Claude Code",
+  "keywords": [
+    "claude-code",
+    "ai-agent",
+    "software-development",
+    "devagent",
+    "spec-driven-development"
+  ],
+  "homepage": "https://github.com/IAZ-A3/DevAgent",
+  "bugs": {
+    "url": "https://github.com/IAZ-A3/DevAgent/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IAZ-A3/DevAgent.git"
+  },
+  "license": "Apache-2.0",
+  "author": "IAZ-A3",
+  "bin": {
+    "devagent-cc": "./bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "deva-commands/",
+    "skills/",
+    "CLAUDE.md",
+    "registry.md",
+    "PROJECT-base-template.md",
+    "PROJECT-web-template.md",
+    "PROJECT-macos-template.md",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
