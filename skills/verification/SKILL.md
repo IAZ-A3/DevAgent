@@ -55,6 +55,7 @@ Step 2: Spawn sub-skills in parallel:
         → NFR Validator
         → Requirement Coverage Auditor
 Step 3: WAIT — all three complete
+Step 3a: Classify each requirement by coverage tier (see below)
 Step 4: Orchestrator consolidates results
 Step 5: Bug triage (classify findings)
 Step 6: Attempt minor bug fixes
@@ -65,6 +66,17 @@ Step 10: Phase gate
 ```
 
 **Parallelism note:** System Test Runner, NFR Validator, and Requirement Coverage Auditor run fully in parallel — they read the same artifacts but write to separate state files.
+
+### Coverage Tier Definitions
+
+Classify each requirement after Step 3:
+- **Automated** — a running test asserts the behavior
+- **Review-verified** — a named reviewer confirmed it and it is recorded in VV-Report.md
+  (acceptable for: visual design, legal/compliance, subjective UX, deployment config)
+- **Unverified** — no test, no review record → this fails the gate
+
+PASS requires zero Unverified requirements.
+Less than 100% automated is acceptable if review-verified entries cover the remainder.
 
 ---
 
@@ -126,7 +138,10 @@ On completion:
 ## System Tests: N passed / N failed
 ## NFRs Auto-Validated: N/N passed
 ## NFRs Pending Manual Check: N
-## Requirements Covered: N/N (100%)
+## Requirements Coverage:
+##   Automated:        N FRs / NFRs
+##   Review-verified:  N (recorded in VV-Report.md)
+##   Unverified:       N  ← must be 0 to PASS
 ## Bugs Found: N total (N minor fixed, N structural handed to Maintenance)
 ## Recommended Next Phase: release
 ## Blockers: {list or "None"}

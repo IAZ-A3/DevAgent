@@ -137,6 +137,30 @@ Orchestrator runs consistency checks across all design documents:
 
 Flag all inconsistencies. Resolve or escalate to user before proceeding.
 
+### Conflict Escalation Protocol
+
+If any inter-document conflict is found (inconsistent interfaces, contradictory
+component boundaries, incompatible data types across documents):
+
+1. Write a DI-XXX entry in the Open Design Issues table
+2. HALT — do not proceed to Sub-phase G (index assembly)
+3. Present each conflict to the user:
+
+```
+Design Conflict — User Decision Required
+
+CONFLICT-001:
+  SystemArchitecture.md: COMP-002 receives events via INTF-001 (push model)
+  ComponentDesign.md:    COMP-002 polls COMP-001 directly (pull model)
+  Impact: determines COMP-002 implementation and test strategy
+  Options:
+    A) Push model — aligns with NFR-001 performance target (Suggested)
+    B) Pull model — simpler but risks NFR-001 violation
+```
+
+Resolve each conflict and update both documents to be consistent.
+Proceed to Sub-phase G only after all conflicts are resolved.
+
 ### Sub-phase G — Index Assembly
 Assemble `docs/design/DesignIndex.md` per Section 7.
 

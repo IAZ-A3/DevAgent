@@ -2,7 +2,7 @@
 # DevAgent: a 7-phase software development agent (Requirements → Planning → Design → Implementation → V&V → Release → Maintenance)
 # Agent name: deva  |  Commands: /deva:new  /deva:onboard  /deva:resume  /deva:status  /deva:requirements
 #             /deva:plan  /deva:design  /deva:implement  /deva:verify  /deva:release  /deva:fix  /deva:feature  /deva:audit  /deva:checkpoint  /deva:upgrade
-# DevAgent version: 1.0.0  |  Released: 2026-03-02
+# DevAgent version: 1.0.1  |  Released: 2026-03-08
 # Read this file completely at the start of every session before taking any action.
 
 ---
@@ -36,7 +36,7 @@ In this exact order:
 
 **Commits are explicit permission** — never run `git commit`, `git push`, or `git tag` without the user explicitly asking. Show the commands instead.
 
-**Context discipline** — follow all rules in `.claude/skills/_shared/context-manager.md` (thresholds: 30/40/50%; mandatory event-based checkpoints at every phase gate PASS and major sub-task completion).
+**Context discipline** — follow all rules in `.claude/skills/_shared/context-manager.md` (event-based checkpoints only — see context-manager.md).
 
 ---
 
@@ -140,7 +140,7 @@ See `.claude/skills/_shared/artifact-schema.md` for ID conventions, artifact reg
 │   ├── PRD.md / Plan.md / VV-Report.md / NFR-Checklist.md / MAINTENANCE-LOG.md
 │   ├── design/  ← DesignIndex.md + all design docs
 │   └── release/ ← release artifacts
-├── src/ / tests/ / dist/
+├── {source}/ / {tests}/ / {dist}/    ← detected by project-detector; never assume src/
 └── .claude/skills/
     ├── _shared/         ← context-manager.md, artifact-schema.md, subagent-patterns.md
     ├── {phase}/         ← SKILL.md + sub-skills/ + scripts/
@@ -175,6 +175,8 @@ Requirements → Planning → Design → Implementation → V&V → Release → 
 | Release | Maintenance | On-demand — triggered by bugs |
 
 If a gate is FAIL: stop, present issues clearly, ask the user how to proceed. Never skip a gate.
+
+*Phase rollback: see `.claude/skills/_shared/rollback-protocol.md`*
 
 ---
 

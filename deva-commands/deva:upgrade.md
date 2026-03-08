@@ -12,6 +12,24 @@ Replace {YOUR_GITHUB_USERNAME} with the actual GitHub username once the repo is 
 
 ## Instructions
 
+### Step 0 — Check project state
+
+Read `.claude/skills/state/artifact-registry.md` (if it exists).
+If any skill shows status IN_PROGRESS:
+
+```
+⚠ Phase '{phase}' is currently in progress.
+  Upgrading mid-phase may cause inconsistencies.
+
+  A) Continue upgrade (safe for MINOR/PATCH bumps)
+  B) Finish the current phase first, then upgrade
+  C) Cancel
+```
+
+Wait for user choice. Stop if B or C.
+
+If no registry or all phases are COMPLETED/ARCHIVED: proceed to Step 1.
+
 ### Step 1 — Read local version
 Read the first 6 lines of `CLAUDE.md` in the project root.
 Extract the version from the line: `# DevAgent version: X.Y.Z  |  Released: {date}`
@@ -153,19 +171,23 @@ Wait for user choice.
 
 ### Step 8 — Apply updates (confirmed files only)
 
+Before modifying any file:
+1. Create: `.claude/.upgrade-backup-{YYYYMMDD}/`
+2. Copy every file being changed into that folder (preserve subdirectory paths)
+3. Tell user: `Backup at .claude/.upgrade-backup-{date}/`
+
 For each confirmed file:
-1. If file exists locally: back it up first → `{original_path}.backup`
-2. Write the fetched remote content to the local path
-3. Confirm: `✓ Updated: {file_path}`
+1. Write the fetched remote content to the local path
+2. Confirm: `✓ Updated: {file_path}`
 
 After all files updated:
 ```
 ✓ DevAgent upgraded to version {remote_version}
 
-Backup files created with .backup extension — delete them once you've verified the upgrade.
+Backup at .claude/.upgrade-backup-{date}/
 
-If anything broke, restore a file with:
-  cp {file_path}.backup {file_path}
+To rollback:  cp -r .claude/.upgrade-backup-{date}/. ./
+              Then run /deva:status to verify.
 ```
 
 ### Step 9 — Post-upgrade check
@@ -180,7 +202,7 @@ If any artifact format has changed (MAJOR version bump): warn the user:
 
 ## Safety Rules
 
-- NEVER overwrite a file without creating a .backup first
+- NEVER overwrite a file without first creating the folder backup in Step 8
 - NEVER update `.claude/skills/state/` files — these are project-specific runtime data
 - NEVER update `PROJECT.md` or `docs/` — these belong to the project, not DevAgent
 - NEVER auto-proceed past Step 7 without explicit user confirmation

@@ -111,14 +111,14 @@ Assemble final `docs/Plan.md` using structure defined in Section 5.
 
 ## 4. Complexity Scoring Scale
 
-| Score | Label | Description |
-|-------|-------|-------------|
-| 1 | XS | Trivial — straightforward, no unknowns, <1h equivalent |
-| 2 | S | Simple — clear path, minimal risk |
-| 3 | M | Medium — some complexity or unknowns |
-| 5 | L | Large — significant complexity, multiple components |
-| 8 | XL | Very large — should be considered for breakdown |
-| 13 | XXL | Excessive — must be broken down before implementation |
+| Score | Label | Description | Example Task |
+|-------|-------|-------------|-------------|
+| 1 | XS | Trivial — no unknowns | Update a config constant, rename a field |
+| 2 | S | Simple — clear path | Add a new API response field, write one utility function |
+| 3 | M | Medium — some complexity | Implement a form with validation, add auth middleware |
+| 5 | L | Large — multiple components | File upload with progress and error handling |
+| 8 | XL | Very large — consider splitting | Real-time sync feature, full caching layer |
+| 13 | XXL | Must be broken down | "Implement authentication system", "Build the data pipeline" |
 
 **Rule:** No task shall remain at XXL in the final plan. The agent must propose a breakdown and confirm with the user.
 
@@ -183,9 +183,9 @@ Assemble final `docs/Plan.md` using structure defined in Section 5.
 ---
 
 ## Change Log
-| Date | Changed By | Change Description |
-|------|------------|-------------------|
-| {date} | Planning Skill | Initial plan generated from PRD v1.0 |
+| Date | Changed By | Task ID | Change |
+|------|------------|---------|--------|
+| {date} | Planning Skill | — | Initial plan generated from PRD v1.0 |
 ```
 
 ---
@@ -197,7 +197,9 @@ When any skill updates Plan.md (e.g. Implementation marks a task DONE):
 1. Read current `docs/Plan.md`
 2. Update ONLY the relevant task row(s): change Status field
 3. Update `Last Updated` header
-4. Append an entry to the Change Log section
+4. Append an entry to the Change Log including:
+   - Task ID ("—" for plan-level changes)
+   - Exact change: "Status: {old} → {new}" or "Added FEAT-XXX-TASK-YYY"
 5. Recalculate Feature Progress `Overall Status`:
    - All tasks TODO → TODO
    - Any task IN_PROGRESS → IN_PROGRESS

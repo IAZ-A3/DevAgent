@@ -36,24 +36,33 @@ Scan in this order:
 
 ## 2. Change Request Detection
 
-Before processing any item, classify it:
+Apply these steps in order before processing any maintenance item:
 
-| Characteristic | Classification | Action |
-|----------------|---------------|--------|
-| Existing behavior broken | Bug | Process normally |
-| Behavior works but user wants it different | Change Request | Redirect |
-| Missing behavior not in PRD | Change Request | Redirect |
-| Code defect with no requirement reference | Bug | Process normally |
-| Performance below NFR acceptance criterion | Bug | Process normally |
+**Step 1 — Find the feature**
+Search PRD.md for a FEAT-XXX whose description covers the reported behavior.
+→ No matching feature → Change Request (missing spec). Redirect to Requirements skill.
+
+**Step 2 — Find the requirement**
+In that feature section, find the FR or NFR governing the reported behavior.
+→ No matching requirement → Change Request (unspecified behavior). Redirect.
+
+**Step 3 — Check implementation intent**
+- Code crashes, throws exception, or causes data loss → Bug (always, regardless of coverage)
+- Code produces wrong output for behavior the FR explicitly defines → Bug
+- Performance is below the NFR acceptance criterion → Bug
+- Code correctly implements the FR but user wants different behavior → Change Request
+- User wants something the FR does not mention → Change Request
+
+**Step 4 — If still ambiguous:**
+Ask: "Is the code failing to do what the PRD says it should do (Bug)?
+Or do you want behavior that differs from what was specified (Change Request)?"
 
 **If Change Request detected:**
 ```
-This request describes new or changed behavior not covered by the current PRD.
-It is classified as a Change Request, not a bug.
+This describes behavior not covered by the current PRD. It is classified as a
+Change Request, not a bug.
 
-To implement this, please run the Requirements skill to update the PRD,
-then re-run Planning, Design, and Implementation as needed.
-
+Run /deva:requirements to update the PRD first.
 I can help you start that process if you'd like.
 ```
 

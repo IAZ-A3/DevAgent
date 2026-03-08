@@ -3,18 +3,20 @@
 
 ---
 
-## 1. Token Budget Awareness
+## 1. Context Hygiene Approach
 
-- At session start, estimate task complexity: Small (<2k tokens), Medium (2k–8k), Large (8k+).
-- At **30% context used**: create an interim checkpoint summary and save to `{skill}/state/checkpoint.md`.
-- At **40% context used**: summarize completed work, write full state to checkpoint, and warn the user.
-- At **50% context used**: STOP new work. Finalize checkpoint. Instruct user to start a fresh session loading the checkpoint.
+Context window percentage cannot be measured directly — do not attempt to estimate it.
+Use only the event-based checkpoints in Section 2. They cover every situation the
+percentage thresholds intended to catch.
+
+If a task will spawn 5+ subagents or generate 10+ files, treat it as a
+"long-running operation" and write a checkpoint before starting.
 
 ---
 
 ## 2. Mandatory Checkpoint Triggers
 
-Checkpoints are written at **two types of triggers** — threshold-based (Section 1) and event-based (below).
+Checkpoints are written at **event-based triggers** (below).
 Event-based checkpoints are written regardless of context usage level.
 
 **Always write a checkpoint at these events:**

@@ -112,6 +112,15 @@ these extensions add web-specific steps, documents, and validations.
 
 ### Phase 1 Extension: Requirements
 
+**NFR defaults can be overridden in PROJECT.md Quality Gates section.**
+Read PROJECT.md first:
+- `Accessibility standard:` → overrides WCAG default
+- `Performance budget:` → overrides LCP/FID/CLS defaults
+- `Browser targets:` → overrides browser compatibility default
+
+If a field is set in PROJECT.md, use that value.
+If blank or "default NFRs", apply the table below.
+
 **Additional NFRs to always include for web projects:**
 
 | NFR | Default Acceptance Criterion |

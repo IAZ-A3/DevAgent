@@ -270,16 +270,24 @@ Onboarding complete. Here's your project status:
   Maintenance:  {X} items queued     (or "None")
 
 Where would you like to resume?
-A) Design — flesh out the [NEEDS DETAIL] design doc stubs before implementing
-B) Implementation — start building the remaining PLANNED/PARTIAL features
-C) V&V — the code is complete, run full verification before release
-D) Maintenance — fix the queued bugs before adding new features
+A) Planning — rebuild or refine the task plan before building
+B) Design — flesh out the [NEEDS DETAIL] design doc stubs before implementing
+C) Implementation — start building the remaining PLANNED/PARTIAL features
+D) V&V — the code is complete, run full verification before release
+E) Maintenance — fix the queued bugs before adding new features
 ```
 
 Wait for user selection. Then:
 - Load the selected skill's SKILL.md
 - Pass it the confirmed artifact paths
 - Proceed normally from that phase
+
+Resume instructions per selection:
+- **Planning:** Load `skills/planning/SKILL.md`, read `docs/PRD.md`, proceed with Sub-phase A
+- **Design:** Load `skills/design/SKILL.md`, read `docs/Plan.md` and `docs/design/DesignIndex.md`, proceed with first `[NEEDS DETAIL]` stub
+- **Implementation:** Load `skills/implementation/SKILL.md`, read `docs/Plan.md`, proceed with first TODO task
+- **V&V:** Load `skills/verification/SKILL.md`, read `docs/Plan.md` and `docs/VV-Report.md`, proceed with Sub-phase A
+- **Maintenance:** Load `skills/maintenance/SKILL.md`, read `.claude/skills/state/maintenance/input-queue.md`, proceed with first queued item
 
 Write final onboarding checkpoint:
 ```
