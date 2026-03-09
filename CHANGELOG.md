@@ -6,6 +6,18 @@ Categories: Added | Changed | Fixed | Removed
 
 ---
 
+## [1.2.0] — 2026-03-09
+
+### Fixed
+- **CLAUDE.md**: Added Task ID routing table (Section 8a) — P-prefix tasks now always route to Implementation skill; BUG-xxx tasks route to Maintenance BUG-FIX mode. Prevents skill context bleed when transitioning from Phase 0 (bugs) to Phase 1 (enhancements).
+- **context-manager.md**: Promoted from advisory to mandatory invariant. Added per-work-item checkpoint as primary rule (Rule 1) — one checkpoint per BUG-xxx, P-xxx task, or implementation wave, never batched. Replaced unmeasurable context-% threshold with ~40 tool-call heuristic. Added checkpoint-before-skill-transition rule (Rule 3) and checkpoint location table (Rule 4) enforcing that ENHANCEMENT mode writes to `implementation/` not `maintenance/`.
+- **maintenance/SKILL.md**: Added sub-mode routing (Section 1) as mandatory first step — BUG-FIX vs ENHANCEMENT determined from task ID before any work begins. ENHANCEMENT mode (P-prefix tasks) checkpoints to `implementation/checkpoint.md`. Inline checkpoint gates added to both BUG-FIX and ENHANCEMENT flows with visual callout boxes.
+- **implementation/SKILL.md**: Added mandatory per-wave checkpoint gate in the orchestration flow. Added context threshold rule (Section 5). Wave-based parallel sub-skill architecture preserved.
+- **onboarding/SKILL.md**: Added Sub-phase G — creates `docs/change-requests/CR-[task-ID].md` stubs for every P-prefix task, providing the traceability records that `/deva:feature` would normally produce. Rewrote re-entry decision (Section 11) to emit explicit `/deva:` commands and immediately begin the target skill flow — prevents AI from staying in Maintenance context when Implementation work is needed.
+- **requirements/SKILL.md**: Fixed PROJECT.md template paths — removed stale `.claude/` prefix.
+
+---
+
 ## [1.1.0] — 2026-03-08
 
 ### Added
