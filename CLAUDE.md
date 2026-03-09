@@ -2,7 +2,7 @@
 # DevAgent: a 7-phase software development agent (Requirements → Planning → Design → Implementation → V&V → Release → Maintenance)
 # Agent name: deva  |  Commands: /deva:new  /deva:onboard  /deva:resume  /deva:status  /deva:requirements
 #             /deva:plan  /deva:design  /deva:implement  /deva:verify  /deva:release  /deva:fix  /deva:feature  /deva:audit  /deva:checkpoint  /deva:upgrade
-# DevAgent version: 1.0.1  |  Released: 2026-03-08
+# DevAgent version: 1.2.0  |  Released: 2026-03-09
 # Read this file completely at the start of every session before taking any action.
 
 ---
@@ -129,25 +129,7 @@ Skill locations: `.claude/skills/onboarding/SKILL.md` (existing projects) and `.
 
 ## 7. File & Folder Conventions
 
-See `.claude/skills/_shared/artifact-schema.md` for ID conventions, artifact registry format, and phase gate format.
-
-### Standard project structure
-```
-{project-root}/
-├── CLAUDE.md / PROJECT.md
-├── VERSION / CHANGELOG.md / RELEASE-NOTES.md
-├── docs/
-│   ├── PRD.md / Plan.md / VV-Report.md / NFR-Checklist.md / MAINTENANCE-LOG.md
-│   ├── design/  ← DesignIndex.md + all design docs
-│   └── release/ ← release artifacts
-├── {source}/ / {tests}/ / {dist}/    ← detected by project-detector; never assume src/
-└── .claude/skills/
-    ├── _shared/         ← context-manager.md, artifact-schema.md, subagent-patterns.md
-    ├── {phase}/         ← SKILL.md + sub-skills/ + scripts/
-    ├── web-profile/     ← web extension profile
-    ├── macos-profile/   ← macOS extension profile
-    └── state/           ← artifact-registry.md, checkpoints, maintenance queue
-```
+See `.claude/skills/_shared/artifact-schema.md` for ID conventions, artifact registry format, phase gate format, and standard project structure.
 
 ### File modification rules
 - `docs/PRD.md` — Requirements skill or user only
@@ -177,6 +159,22 @@ Requirements → Planning → Design → Implementation → V&V → Release → 
 If a gate is FAIL: stop, present issues clearly, ask the user how to proceed. Never skip a gate.
 
 *Phase rollback: see `.claude/skills/_shared/rollback-protocol.md`*
+
+---
+
+## 8a. Task ID Routing Rules
+
+Task ID routing takes precedence over natural-language interpretation. Apply **before** invoking any skill.
+
+| Task ID | Correct skill / command |
+|---------|------------------------|
+| `BUG-xxx` / `P0-xxx` | `/deva:fix` → Maintenance **BUG-FIX** mode |
+| `AS-xxx` | Read-only. Do not re-implement. |
+| `P1-xxx` – `P4-xxx` | `/deva:implement [task-ID]` → **Implementation** skill |
+| `P5-xxx` | `/deva:verify` or `/deva:release` |
+| No ID, new feature | `/deva:feature [description]` first |
+
+**Completing Phase 0 (BUG-xxx) work does not permit continuing in Maintenance for P1-xxx tasks.** A P-prefix task ID always routes to Implementation. Mixing checkpoint locations corrupts the audit trail.
 
 ---
 

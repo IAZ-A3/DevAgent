@@ -1,80 +1,67 @@
-# DevAgent Skill: Maintenance — Orchestrator
-**Phase:** 7 of 7  
-**Role:** Entry point and coordinator for reactive bug fixing  
-**Output:** Fixed code, updated docs (if needed), updated `docs/Plan.md`, optional patch release  
-**Imports:** `../_shared/context-manager.md`, `../_shared/subagent-patterns.md`, `../_shared/artifact-schema.md`
+---
+name: maintenance
+description: Post-release work on an existing DevAgent-managed codebase. Handles two sub-modes: BUG-FIX (resolving defects, regressions, crashes — triggered by /deva:fix or BUG-xxx IDs) and ENHANCEMENT (implementing pre-approved plan.md items with P-prefix IDs like P1-xxx, P2-xxx, P3-xxx — but ONLY when those tasks are already marked TODO in plan.md from a prior onboarding or change request). Do NOT use this skill for P-prefix tasks that have not yet been through /deva:feature — route those to the feature command first. Route new greenfield features to /deva:feature. Route V&V to /deva:verify. Route release to /deva:release.
+---
+
+# Maintenance Skill
+
+Handles post-release corrective and improvement work. **Read Section 1 immediately to determine your sub-mode before doing anything else.**
 
 ---
 
-## Purpose
+## Section 1 — Sub-Mode Routing (MANDATORY FIRST STEP)
 
-Handle bugs reactively — from the V&V maintenance queue or directly reported by the user. For each bug: analyze, fix, re-run affected tests, and ask the user whether to release a patch. If a bug reveals a requirements or design gap, update the relevant upstream documents. Change requests (new features) are out of scope — redirect to Requirements skill.
+Identify the work item type from the task ID or user instruction:
 
----
+| Work item | ID pattern | Sub-mode | State folder | Invoke instead? |
+|-----------|-----------|----------|-------------|-----------------|
+| Bug fix / regression / crash | `BUG-xxx` or no ID | **BUG-FIX** | `.claude/skills/state/maintenance/` | — |
+| Pre-approved plan.md enhancement | `P1-xxx`, `P2-xxx`, `P3-xxx`, `P4-xxx` | **ENHANCEMENT** | `.claude/skills/state/implementation/` | Consider `/deva:implement` |
+| New feature not yet in plan.md | none / description only | — | — | **STOP. Invoke `/deva:feature` first** |
+| V&V / testing | — | — | — | **STOP. Invoke `/deva:verify`** |
 
-## 1. Input Discovery
+> **Critical:** If the task ID starts with `P`, you are doing **implementation work on a planned enhancement**, not maintenance. The artifacts you produce (new source files, new services, new UI components) are implementation artifacts. Write your checkpoint to `.claude/skills/state/implementation/checkpoint.md`. Apply implementation quality criteria (NFR compliance, design linkage, test stubs). Do not conflate this with bug-fix work.
 
-### If inputs are explicitly provided:
-Use them directly. Accepted forms:
-- Bug description in the prompt
-- BUG-XXX ID referencing the maintenance queue
-- Error message, stack trace, or test failure output
-
-### If inputs are NOT explicitly provided (auto-discovery):
-Scan in this order:
-1. `.claude/skills/state/maintenance/input-queue.md` — bugs handed off from V&V
-2. `docs/VV-Report.md` — failed tests reference
-3. `docs/PRD.md` — requirements reference
-4. `docs/design/DesignIndex.md` — design reference
-5. `docs/Plan.md` — task and feature reference
-6. `docs/design/TechnologyStack.md` — test runner
-7. `.claude/skills/state/maintenance/checkpoint.md` — resume from previous session
-
-**If no bugs found in queue and none provided:** inform user the maintenance queue is empty and ask if they want to report a new bug.
+> **Why this matters:** plan.md audit trails, artifact traceability, and `/deva:audit` all rely on checkpoint location to distinguish "we fixed a crash" from "we added BatteryService."
 
 ---
 
-## 2. Change Request Detection
+## Section 2 — Pre-Flight Checks
 
-Apply these steps in order before processing any maintenance item:
+Before any work begins:
+
+1. Read `docs/Plan.md` — confirm the task ID exists and is marked `TODO`
+2. Read `PROJECT.md` — confirm platform, conventions, active profile
+3. Read `docs/PRD.md` — check NFR constraints relevant to the task
+4. Load prior checkpoint if resuming: read `.claude/skills/state/[sub-mode folder]/checkpoint.md`
+
+For **BUG-FIX**: Also confirm bug ID in `docs/MAINTENANCE-LOG.md` (or create entry).
+
+For **ENHANCEMENT**: Also check NFR-008 if task adds collapsed pill content; read any referenced design docs from `docs/design/`.
+
+---
+
+## Section 3 — BUG-FIX Flow
+
+### Change Request Detection (run before fixing any bug)
 
 **Step 1 — Find the feature**
 Search PRD.md for a FEAT-XXX whose description covers the reported behavior.
-→ No matching feature → Change Request (missing spec). Redirect to Requirements skill.
+→ No matching feature → Change Request (missing spec). Redirect to `/deva:requirements`.
 
 **Step 2 — Find the requirement**
 In that feature section, find the FR or NFR governing the reported behavior.
 → No matching requirement → Change Request (unspecified behavior). Redirect.
 
 **Step 3 — Check implementation intent**
-- Code crashes, throws exception, or causes data loss → Bug (always, regardless of coverage)
+- Code crashes, throws exception, or causes data loss → Bug (always)
 - Code produces wrong output for behavior the FR explicitly defines → Bug
 - Performance is below the NFR acceptance criterion → Bug
 - Code correctly implements the FR but user wants different behavior → Change Request
 - User wants something the FR does not mention → Change Request
 
-**Step 4 — If still ambiguous:**
-Ask: "Is the code failing to do what the PRD says it should do (Bug)?
-Or do you want behavior that differs from what was specified (Change Request)?"
+### Severity Classification
 
-**If Change Request detected:**
-```
-This describes behavior not covered by the current PRD. It is classified as a
-Change Request, not a bug.
-
-Run /deva:requirements to update the PRD first.
-I can help you start that process if you'd like.
-```
-
----
-
-## 3. Bug Intake & Prioritization
-
-For each bug in the queue or provided by user:
-
-**Assign/confirm BUG-XXX ID** (from artifact-schema.md conventions).
-
-**Classify severity:**
 | Severity | Definition |
 |----------|-----------|
 | CRITICAL | System crash, data loss, security vulnerability, complete feature failure |
@@ -82,96 +69,177 @@ For each bug in the queue or provided by user:
 | MEDIUM | Incorrect behavior in edge case, minor functional issue |
 | LOW | Cosmetic issue, minor inconsistency |
 
-**Process order:** CRITICAL first, then HIGH, MEDIUM, LOW.
-**One bug at a time** — complete full fix + test cycle before starting next bug.
+Process order: CRITICAL first, then HIGH, MEDIUM, LOW. One bug at a time.
 
----
-
-## 4. Orchestration Flow (per bug)
+### Fix Execution
 
 ```
-Step 1: Classify bug (CR check + severity)
-Step 2: Spawn Bug Fixer sub-skill
-Step 3: WAIT — Bug Fixer produces fix + impact assessment
-Step 4: If upstream docs need update → apply updates
-Step 5: Spawn Regression Runner sub-skill
-Step 6: WAIT — Regression Runner produces test results
-Step 7: Evaluate results:
-        → All previously failing tests now PASS: proceed to Step 8
-        → Some tests still failing: back to Step 2 (re-fix)
-        → New failures introduced: back to Step 2 (fix regression)
-Step 8: Update Plan.md and maintenance log
-Step 9: Ask user: release patch or continue to next bug?
-Step 10: If release → invoke Release skill (PATCH bump)
-         If continue → process next bug from queue
+STEP 1: TRIAGE
+  - Confirm bug ID in MAINTENANCE-LOG.md (or create entry)
+  - State the symptom, affected component, reproduction condition
+
+STEP 2: ROOT CAUSE
+  - Read relevant source files
+  - Identify the defect location (file, line range)
+  - State the root cause in one sentence before writing any code
+
+STEP 3: FIX
+  - Implement the minimal fix
+  - Do not refactor unrelated code in the same commit
+  - Update upstream docs (PRD.md or design docs) if the bug reveals a requirement or design gap
+
+STEP 4: VERIFY
+  - Confirm the symptom no longer occurs
+  - Confirm no regressions in adjacent functionality
+  - Run existing tests if coverage exists
+
+╔══════════════════════════════════════════════════════╗
+║  CHECKPOINT — MANDATORY AFTER EACH BUG IS RESOLVED  ║
+║  File: .claude/skills/state/maintenance/checkpoint.md║
+║  Write BEFORE proceeding to the next bug             ║
+║  Template: Section 7                                 ║
+╚══════════════════════════════════════════════════════╝
+
+STEP 5: LOG
+  - Update MAINTENANCE-LOG.md with resolution summary
+  - Mark task DONE in docs/Plan.md
 ```
 
 ---
 
-## 5. Upstream Document Update Rules
+## Section 4 — ENHANCEMENT Flow
 
-The Bug Fixer assesses whether upstream documents need updating. The orchestrator applies the updates:
+Follow these steps **in order**. Do not skip steps.
 
-| Bug Type | Document to Update | Update Action |
-|----------|-------------------|---------------|
-| Requirement was wrong/missing | `docs/PRD.md` | Add/correct the requirement, assign new ID if needed |
-| Design was wrong/missing | relevant `docs/design/*.md` | Correct the design element, note the change |
-| Both requirement and design wrong | Both | Update both, maintain traceability |
-| Pure code defect | None | No upstream update needed |
+```
+STEP 1: DESIGN CHECK
+  - Read the task entry in docs/Plan.md (notes column)
+  - If notes reference a design doc, read it before coding
+  - Confirm NFR-008 compliance plan if task adds collapsed pill content:
+      * Declare pixel contribution in NotchCoordinator.bindContentSources()
+      * Add Defaults.Key<Bool> toggle
+      * Wire Settings → Notch Display toggle
+      * Gate view content on that key
 
-All upstream updates must be logged in the maintenance log with the BUG-XXX reference.
+STEP 2: IMPLEMENTATION
+  - Create new files in the correct source location
+  - Follow PROJECT.md conventions (naming, MVVM pattern, etc.)
+  - Do not modify files unrelated to this task
+
+STEP 3: INTEGRATION
+  - Wire the new component into the existing system
+  - Confirm no regressions in adjacent functionality
+
+STEP 4: TEST STUBS
+  - Add at minimum a placeholder test file for the new component
+  - Note any test gaps in the checkpoint
+
+╔══════════════════════════════════════════════════════════╗
+║  CHECKPOINT — MANDATORY AFTER EACH ENHANCEMENT IS DONE  ║
+║  File: .claude/skills/state/implementation/checkpoint.md ║
+║  Write BEFORE proceeding to the next task                ║
+║  Template: Section 7                                     ║
+╚══════════════════════════════════════════════════════════╝
+
+STEP 5: PLAN UPDATE
+  - Mark task DONE in docs/Plan.md
+  - Note any follow-on items discovered
+```
 
 ---
 
-## 6. Maintenance Log
+## Section 5 — Context Threshold Rule
 
-Append to `docs/MAINTENANCE-LOG.md` after each bug resolution:
+**After approximately every 40 tool calls** (count tool-use blocks visible in your context):
+1. Write a checkpoint immediately (do not finish the current task first)
+2. State: "Context threshold reached — checkpoint written. Resume with `/deva:resume`."
+3. Stop.
+
+This rule overrides all other rules.
+
+---
+
+## Section 6 — Phase Gate
+
+When all tasks in the current batch are complete:
+
+```
+Maintenance gate: [BUG-FIX | ENHANCEMENT] → [next phase]
+
+Gate result: PASS | PASS_WITH_NOTES | BLOCKED
+
+Tasks completed: [list with IDs]
+Tasks remaining: [list with IDs, or NONE]
+Checkpoint written: .claude/skills/state/[folder]/checkpoint.md
+
+Next action:
+  - If more P-phase tasks remain: invoke /deva:implement [next-task-ID]
+  - If V&V needed: invoke /deva:verify
+  - If done: invoke /deva:release or end session
+```
+
+**Do not chain phases without user approval.**
+
+---
+
+## Section 7 — Checkpoint Templates
+
+### BUG-FIX checkpoint (`.claude/skills/state/maintenance/checkpoint.md`)
 
 ```markdown
-## BUG-XXX: {title}
-**Date:** {date}  
-**Severity:** CRITICAL | HIGH | MEDIUM | LOW  
-**Reported by:** V&V Phase | User  
-**Feature:** FEAT-XXX  
-**Requirement:** {FR/NFR ID or "None — code defect"}  
-**Root cause:** {brief description}  
-**Fix applied:** {files changed, what was changed}  
-**Upstream updates:** {PRD.md | design doc | None}  
-**Tests re-run:** {list of test IDs}  
-**Test result:** PASS | FAIL  
-**Released in:** v{version} | Pending  
+# Maintenance Checkpoint
+Updated: [ISO timestamp]
+Sub-mode: BUG-FIX
+
+## Completed
+- [BUG-xxx] [description] — RESOLVED ([root cause in one sentence])
+
+## In Progress
+- [BUG-xxx] [description] — [what was done, what remains]
+
+## Not Started
+- [list remaining BUG-xxx items]
+
+## Files Modified
+- [file path] — [what changed]
+
+## Resume Instructions
+Load this checkpoint, read MAINTENANCE-LOG.md, continue with next bug.
+```
+
+### ENHANCEMENT checkpoint (`.claude/skills/state/implementation/checkpoint.md`)
+
+```markdown
+# Implementation Checkpoint (Enhancement Mode)
+Updated: [ISO timestamp]
+Sub-mode: ENHANCEMENT (routed from Maintenance skill)
+
+## Completed
+- [P-xxx] [description] — DONE
+  - Files created: [list]
+  - NFR-008 compliant: [yes/no/N/A]
+  - Test stubs: [yes/no]
+
+## In Progress
+- [P-xxx] [description]
+  - Completed: [what's done]
+  - Remaining: [what's left]
+
+## Not Started
+- [list remaining P-xxx items]
+
+## Resume Instructions
+Load this checkpoint, read docs/Plan.md, continue with next P-xxx item.
 ```
 
 ---
 
-## 7. Context Management (Phase-Specific)
+## Section 8 — What This Skill Does NOT Handle
 
-Imports rules from `../_shared/context-manager.md`, plus:
-
-- Checkpoint after each bug is resolved (before starting next)
-- Checkpoint before invoking Release skill
-- State folder: `.claude/skills/state/maintenance/`
-- If context runs low mid-fix: complete current function fix, save partial state, checkpoint with exact resume point
-
----
-
-## 8. Output & Maintenance Cycle Summary
-
-After all bugs in the current session are processed:
-1. Updated source files
-2. Updated upstream docs (if needed)
-3. `docs/MAINTENANCE-LOG.md` updated
-4. `docs/Plan.md` updated
-5. Update `.claude/skills/state/artifact-registry.md`
-6. Produce session summary:
-
-```
-# Maintenance Session Summary
-## Date: {date}
-## Bugs Processed: N
-## Fixed: N
-## Pending (deferred): N
-## Upstream Updates: {list or "None"}
-## Patch Released: v{version} | No release this session
-## Remaining Queue: N bugs
-```
+| Situation | Correct action |
+|-----------|---------------|
+| New feature not in plan.md | `/deva:feature [description]` |
+| V&V / testing | `/deva:verify` |
+| Release packaging | `/deva:release` |
+| Design changes | `/deva:design` |
+| Requirements changes | `/deva:requirements` |

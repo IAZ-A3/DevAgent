@@ -160,9 +160,9 @@ Assemble the final `docs/PRD.md` using the structure defined in Section 5.
 After PRD.md is assembled and before the phase gate closes:
 
 1. Detect project type from PRD.md (platform, technology stack, distribution) to select the correct template:
-   - macOS app detected → copy `.claude/PROJECT-macos-template.md`
-   - Web project detected → copy `.claude/PROJECT-web-template.md`
-   - Neither → copy `.claude/PROJECT-base-template.md` 
+   - macOS app detected → copy `PROJECT-macos-template.md`
+   - Web project detected → copy `PROJECT-web-template.md`
+   - Neither → copy `PROJECT-base-template.md` 
 
 2. Fill in every field using answers already collected during the Requirements interview:
 

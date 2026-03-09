@@ -1,49 +1,112 @@
-# Context Manager — Shared Module
-> Imported by all skills. Defines universal context hygiene rules.
+---
+name: context-manager
+description: Shared utility imported by all DevAgent skills. Defines mandatory checkpoint rules. This is not advisory — every skill must follow these rules. If a skill's execution flow does not have an explicit checkpoint step, the rules here apply as the fallback.
+---
+
+# Context Manager
+
+**Status: MANDATORY. Not advisory. Not optional.**
+
+All DevAgent skills import this file. The rules here are enforced as invariants.
+If a skill's own SKILL.md has a more specific checkpoint rule (e.g., "after each bug"),
+that rule applies. If the skill's flow is silent on checkpoints, **these rules apply**.
 
 ---
 
-## 1. Context Hygiene Approach
+## Rule 1 — Per-Work-Item Checkpoint (PRIMARY RULE)
 
-Context window percentage cannot be measured directly — do not attempt to estimate it.
-Use only the event-based checkpoints in Section 2. They cover every situation the
-percentage thresholds intended to catch.
+Write a checkpoint after **every work item completes**, regardless of type:
+- After each bug is resolved → `maintenance/checkpoint.md`
+- After each enhancement task is complete → `implementation/checkpoint.md`
+- After each wave completes in implementation → `implementation/checkpoint.md`
+- After each design doc is produced → `design/checkpoint.md`
+- After each V&V check block completes → `verification/checkpoint.md`
+- After release packaging step → `release/checkpoint.md`
 
-If a task will spawn 5+ subagents or generate 10+ files, treat it as a
-"long-running operation" and write a checkpoint before starting.
+"Work item" means: one BUG-xxx, one P-xxx task, one implementation wave, one design doc, one V&V block.
+**Do not batch multiple work items into a single checkpoint write.**
 
 ---
 
-## 2. Mandatory Checkpoint Triggers
+## Rule 2 — Context Threshold Checkpoint (SAFETY NET)
 
-Checkpoints are written at **event-based triggers** (below).
-Event-based checkpoints are written regardless of context usage level.
+**After approximately every 40 tool calls in a session:**
 
-**Always write a checkpoint at these events:**
+1. Stop immediately — do not finish the current step
+2. Write checkpoint to the active skill's state folder
+3. Note the partial state in the "In Progress" section
+4. Output: `"Context threshold reached — checkpoint written at [path]. Resume with /deva:resume."`
+5. Stop. Do not continue.
 
-| Event | Status field |
-|-------|-------------|
-| Phase gate PASS — before user approves next phase | `COMPLETED` |
-| Major sub-task complete within a phase | `IN_PROGRESS` |
-| Before any long-running operation (archive, notarization, full test suite) | `IN_PROGRESS` |
-| User explicitly asks to pause or end session | `IN_PROGRESS` |
+Count tool calls by scanning the tool-use blocks visible in your current context. This is a rough heuristic — when in doubt, checkpoint early rather than late.
 
-Checkpoint location: `.claude/skills/state/{phase}/checkpoint.md`
+This rule overrides Rule 1. If threshold is hit mid-task, write a partial checkpoint.
 
-**Why this matters:** after a phase gate PASS, the user may choose to clear the context window
-and start a fresh session for the next phase. The checkpoint must contain everything needed
-to resume without re-reading conversation history.
+---
 
-**Phase gate checkpoint — additional required fields beyond Section 3 format:**
+## Rule 3 — Checkpoint Before Skill Transition
+
+Before invoking a new skill (e.g., transitioning from Maintenance to Implementation):
+1. Write a final checkpoint for the current skill
+2. Confirm the checkpoint is written
+3. Then invoke the new skill
+
+Do not invoke a new skill with unsaved state.
+
+---
+
+## Rule 4 — Checkpoint Location by Skill
+
+| Active skill | Checkpoint path |
+|-------------|----------------|
+| Requirements | `.claude/skills/state/requirements/checkpoint.md` |
+| Planning | `.claude/skills/state/planning/checkpoint.md` |
+| Design | `.claude/skills/state/design/checkpoint.md` |
+| Implementation | `.claude/skills/state/implementation/checkpoint.md` |
+| Verification | `.claude/skills/state/verification/checkpoint.md` |
+| Release | `.claude/skills/state/release/checkpoint.md` |
+| Maintenance (BUG-FIX) | `.claude/skills/state/maintenance/checkpoint.md` |
+| Maintenance (ENHANCEMENT) | `.claude/skills/state/implementation/checkpoint.md` |
+| Onboarding | `.claude/skills/state/onboarding/checkpoint.md` |
+
+**Maintenance ENHANCEMENT mode uses the implementation folder.** This is intentional.
+Enhancements are implementation artifacts; they must be traceable as such.
+
+---
+
+## Rule 5 — Checkpoint Minimum Content
+
+Every checkpoint must include at minimum:
+
+```markdown
+# [Skill Name] Checkpoint
+Updated: [ISO 8601 timestamp]
+Active sub-mode: [if applicable]
+
+## Completed
+[list of work items with IDs — or "none" if first checkpoint]
+
+## In Progress
+[current work item and what sub-steps are done / remain]
+
+## Not Started
+[remaining work items from plan.md or task list]
+
+## Resume Instructions
+[exact steps to continue: which file to read first, which task to start]
 ```
-## Phase just completed: {phase name}
-## Gate result: PASS | PASS_WITH_BUGS
-## Known issues carried forward: [list or "None"]
-## Next phase: {phase name}
-## Resume instruction: Load {next SKILL.md path}, read {key artifact paths}, proceed with {exact first step}
-```
 
-**After writing a phase gate checkpoint, always inform the user:**
+A checkpoint without "Resume Instructions" is incomplete and does not satisfy Rule 1.
+
+---
+
+## Rule 6 — Phase Gate Checkpoints
+
+At phase gate PASS — before user approves next phase:
+- Write checkpoint with status: COMPLETED
+- Include: phase just completed, gate result, known issues carried forward, next phase, resume instruction
+
+After writing a phase gate checkpoint, always inform the user:
 ```
 ✓ Checkpoint saved: .claude/skills/state/{phase}/checkpoint.md
   You can continue now, or start a fresh session for the {next phase} phase.
@@ -52,22 +115,18 @@ to resume without re-reading conversation history.
 
 ---
 
-## 3. Checkpoint Format
+## Anti-Patterns (What Breaks Checkpoints)
 
-Each checkpoint must contain:
-```
-# Checkpoint — {Skill Name} — {timestamp}
-## Status: IN_PROGRESS | COMPLETED | BLOCKED
-## Completed Steps: [list]
-## Pending Steps: [list]
-## Key Decisions Made: [list]
-## Artifacts Produced: [file paths]
-## Next Agent Instructions: [exact instructions to resume]
-```
+1. **Writing checkpoint at session end only** — violates Rule 1. One bug fixed = one checkpoint, regardless of session length.
+2. **Checkpoint in wrong folder** — e.g., P1-xxx work in `maintenance/` — corrupts audit trail.
+3. **Vague "In Progress" section** — "working on P1-002" with no sub-step detail is useless for resumption.
+4. **Skipping checkpoint because "it's a small task"** — Rule 1 has no size exception.
+5. **Batching multiple tasks into one checkpoint** — violates Rule 1. Each task gets its own checkpoint entry.
+6. **No "Resume Instructions" section** — violates Rule 5. A checkpoint without resume instructions is incomplete.
 
 ---
 
-## 4. Subagent Handoff
+## Subagent Handoff
 
 When spawning a subagent:
 - Pass only the **minimum required context** (not full conversation history).
@@ -76,7 +135,7 @@ When spawning a subagent:
 
 ---
 
-## 5. Context Rot Prevention
+## Context Rot Prevention
 
 - Never rely on information mentioned only in early conversation turns — always re-read from artifact files.
 - If a fact is needed more than once, it must be written to an artifact file first.
@@ -85,7 +144,7 @@ When spawning a subagent:
 
 ---
 
-## 6. Parallel Execution Rules
+## Parallel Execution Rules
 
 - Identify independent tasks at the start of each phase.
 - Spawn parallel subagents for independent tasks; use sequential execution only when there is a hard dependency.

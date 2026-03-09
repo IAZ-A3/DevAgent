@@ -1,6 +1,11 @@
+---
+name: onboarding
+description: Reverse-engineers an existing codebase that has no DevAgent paper trail. Run via /deva:onboard. Produces PRD.md, Plan.md, and design docs. At the end, emits an explicit skill handoff command — do not leave re-entry decision as prose. Also creates change-request stubs for all P-prefix plan.md items so they have traceability records.
+---
+
 # DevAgent Skill: Project Onboarding
 **Phase:** 0 — Pre-phase (runs before normal phase sequence)
-**Output:** `docs/PRD.md`, `PROJECT.md`, `docs/Plan.md`, `docs/design/DesignIndex.md`, re-entry decision
+**Output:** `docs/PRD.md`, `PROJECT.md`, `docs/Plan.md`, `docs/design/DesignIndex.md`, `docs/change-requests/`, re-entry decision
 **Imports:** `../_shared/context-manager.md`, `../_shared/artifact-schema.md`
 **Sub-skills:**
 - `sub-skills/code-archaeologist.md` — reverse-engineer features from source code
@@ -246,7 +251,35 @@ If quality observations or known bugs were reported in user interview:
 
 ---
 
-## 9. Sub-phase G — PROJECT.md Generation
+## 9. Sub-phase G — Change Request Stubs (MANDATORY)
+
+After Plan.md is written, for every P-prefix task (P1-xxx, P2-xxx, P3-xxx, P4-xxx) in Plan.md:
+
+```
+Create one file per P-xxx task:
+File: docs/change-requests/CR-[task-ID].md
+
+Template:
+---
+# Change Request: [task name]
+ID: CR-[task-ID]
+Plan task: [task-ID]
+Status: APPROVED (pre-approved via onboarding)
+Source: Onboarding gap interview
+PRD section: [section number]
+Description: [from plan.md notes]
+NFR impact: [list affected NFRs, especially NFR-008 if pill content]
+Design doc required: [yes/no — if yes, path in DesignIndex.md]
+---
+```
+
+**Rationale:** P-prefix tasks produced by Onboarding bypass the `/deva:feature` change-request flow. These stubs create the traceability records that `/deva:feature` would normally produce, so `/deva:audit` can verify them.
+
+If Plan.md has no P-prefix tasks, skip this sub-phase and note "No CR stubs needed" in the checkpoint.
+
+---
+
+## 10. Sub-phase G — PROJECT.md Generation
 
 Follow the identical procedure as Requirements SKILL.md Sub-phase G:
 - Detect project type → select correct template
@@ -256,57 +289,80 @@ Follow the identical procedure as Requirements SKILL.md Sub-phase G:
 
 ---
 
-## 10. Sub-phase H — Re-entry Decision
+## 11. Sub-phase I — Re-entry Decision and Skill Handoff (CRITICAL)
 
 Present a summary and ask the user where to resume:
 
 ```
-Onboarding complete. Here's your project status:
+Onboarding complete.
 
-  PRD:          docs/PRD.md          ({X} features: {a} complete, {b} partial, {c} planned)
-  Plan:         docs/Plan.md         ({X} tasks DONE, {Y} tasks TODO)
-  Design docs:  docs/design/         ({X} written, {Y} stubs needing detail)
-  PROJECT.md:   project root         (confirmed)
-  Maintenance:  {X} items queued     (or "None")
+Artifacts produced:
+  ✓ docs/PRD.md — {X} features ({a} complete, {b} partial, {c} planned)
+  ✓ docs/Plan.md — Phase 0: {N} bugs, Phase 1: {N} enhancements
+  ✓ docs/design/ — {X} written, {Y} stubs needing detail
+  ✓ PROJECT.md — confirmed
+  ✓ docs/change-requests/ — {N} CR stubs (or "None")
+  ✓ Maintenance queue — {X} items (or "None")
 
-Where would you like to resume?
-A) Planning — rebuild or refine the task plan before building
-B) Design — flesh out the [NEEDS DETAIL] design doc stubs before implementing
-C) Implementation — start building the remaining PLANNED/PARTIAL features
-D) V&V — the code is complete, run full verification before release
-E) Maintenance — fix the queued bugs before adding new features
+Re-entry options:
+  A) Phase 0 — Bug fixes (BUG-xxx items)
+     → I will invoke: /deva:fix
+  B) Phase 1 — Enhancements (P1-xxx items)
+     → I will invoke: /deva:implement
+  C) Design — Flesh out NEEDS DETAIL design doc stubs
+     → I will invoke: /deva:design
+  D) V&V — The code is complete, run full verification
+     → I will invoke: /deva:verify
+  E) Planning — Rebuild or refine the task plan first
+     → I will invoke: /deva:plan
+  F) Maintenance — No planned work; monitor and fix as needed
+     → I will invoke: /deva:fix when issues arise
+
+Which option? (A / B / C / D / E / F)
 ```
 
-Wait for user selection. Then:
-- Load the selected skill's SKILL.md
-- Pass it the confirmed artifact paths
-- Proceed normally from that phase
+**When the user selects an option, emit the exact command and immediately begin the target skill flow. Do NOT describe what you will do in prose and then wait.**
 
-Resume instructions per selection:
-- **Planning:** Load `skills/planning/SKILL.md`, read `docs/PRD.md`, proceed with Sub-phase A
-- **Design:** Load `skills/design/SKILL.md`, read `docs/Plan.md` and `docs/design/DesignIndex.md`, proceed with first `[NEEDS DETAIL]` stub
-- **Implementation:** Load `skills/implementation/SKILL.md`, read `docs/Plan.md`, proceed with first TODO task
-- **V&V:** Load `skills/verification/SKILL.md`, read `docs/Plan.md` and `docs/VV-Report.md`, proceed with Sub-phase A
-- **Maintenance:** Load `skills/maintenance/SKILL.md`, read `.claude/skills/state/maintenance/input-queue.md`, proceed with first queued item
+| Selection | Output | Action |
+|-----------|--------|--------|
+| A | `→ Invoking /deva:fix` | Begin Maintenance skill BUG-FIX flow immediately |
+| B | `→ Invoking /deva:implement [first P1-xxx task ID]` | Begin Implementation skill flow immediately |
+| C | `→ Invoking /deva:design` | Begin Design skill flow immediately |
+| D | `→ Invoking /deva:verify` | Begin Verification skill flow immediately |
+| E | `→ Invoking /deva:plan` | Begin Planning skill flow immediately |
+| F | `→ No active skill. Use /deva:fix when a bug is reported.` | End session |
 
-Write final onboarding checkpoint:
+> **Why this matters:** Leaving the handoff as prose allows the AI to stay in the wrong skill context (e.g., continuing in Maintenance after Phase 0 when Phase 1 needs Implementation). The explicit command forces a clean skill switch.
+
+Write final onboarding checkpoint before invoking the target skill:
 ```
 # Checkpoint — Onboarding — {timestamp}
 ## Status: COMPLETED
 ## Phase just completed: Onboarding
-## Artifacts produced:
+
+## Artifacts Produced
   - docs/PRD.md
   - docs/Plan.md
   - docs/design/DesignIndex.md + {list of design docs}
   - PROJECT.md
+  - docs/change-requests/ ({N} CR stubs, or "None")
   - .claude/skills/state/maintenance/input-queue.md (if applicable)
-## Re-entry phase: {user selection}
-## Resume instruction: Load skills/{phase}/SKILL.md, read docs/PRD.md and docs/Plan.md, proceed with first TODO task
+
+## Re-Entry Decision
+Selected: {option letter}
+Next skill: {skill name}
+Next command: {exact command}
+
+## Known Gaps
+- {any NEEDS DETAIL items, unanswered questions}
+
+## Resume Instructions
+Load skills/{phase}/SKILL.md, read docs/PRD.md and docs/Plan.md, proceed with first TODO task.
 ```
 
 ---
 
-## 11. What This Skill Must Never Do
+## 12. What This Skill Must Never Do
 
 - Never overwrite an existing file without reading it first and asking the user
 - Never mark a feature AS-BUILT without evidence in the code
